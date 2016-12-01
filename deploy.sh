@@ -28,9 +28,6 @@ reload_service() {
 	fi
 }
 
-
-balancer=0
-
 while getopts ":s:f:a:d:c:i:b:" o; do
     case "${o}" in
         s)
