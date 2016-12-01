@@ -1,5 +1,7 @@
 #!/bin/bash
-usage() { echo "Usage: $0 [-s <path>] [-f <file_name> **optional] [-a <up|stop|restart|build>] [-d <daemon mode> **only up] [-i <service_name>]  [-c <no cache> **only build]" 1>&2; exit 1; }
+usage() { 
+echo "Usage: $0 [-s <path>] [-f <file_name> **optional] [-a <up|stop|restart|build>] [-d <daemon mode> **only up] [-i <service_name>]  [-c <no cache> **only build]" 1>&2; exit 1; 
+}
 
 reload_balancer() {
 	cd /usr/local/opt/load-balancer
@@ -8,7 +10,28 @@ reload_balancer() {
 	docker-compose up -d
 }
 
-while getopts ":s:f:a:d:c:i:" o; do
+verify_parameters() {
+	if [ -z "${source}" ] || [ -z "${action}" ]; then
+    		usage
+	fi
+}
+
+reload_service() {
+	cd ${source}
+
+	command="docker-compose -f ${file} ${action} ${daemon} ${service} ${nocache}"
+	echo "Execute the command: ${command}"
+	$command
+
+	if [ ${action} == "up" ] || [ ${action} == "restart" ]; then
+        	reload_balancer
+	fi
+}
+
+
+balancer=0
+
+while getopts ":s:f:a:d:c:i:b:" o; do
     case "${o}" in
         s)
             source=${OPTARG}
@@ -36,22 +59,17 @@ while getopts ":s:f:a:d:c:i:" o; do
 	i)
 	    service=${OPTARG}
 	    ;;
+	b)
+	    balancer=1
+            ;;
     esac
 done
 shift $((OPTIND-1))
 
-if [ -z "${source}" ] || [ -z "${action}" ]; then
-    usage
-fi
+verify_parameters
 
-cd ${source}
+echo "Start proccess"
 
-command="docker-compose -f ${file} ${action} ${daemon} ${service} ${nocache}"
-echo "Execute the command ${command}"
-$command
-
-if [ ${action} == "up" ] || [ ${action} == "restart" ]; then
-	reload_balancer
-fi
+reload_service
  
 echo "End process."
