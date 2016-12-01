@@ -56,9 +56,6 @@ while getopts ":s:f:a:d:c:i:b:" o; do
 	i)
 	    service=${OPTARG}
 	    ;;
-	b)
-	    balancer=1
-            ;;
     esac
 done
 shift $((OPTIND-1))
