@@ -1,5 +1,5 @@
 #!/bin/bash
-usage() { echo "Usage: $0 [-s <path>] [-f <file_name>] [-a <up|stop|restart>] [-d <daemon mode>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-s <path>] [-f <file_name> **optional] [-a <up|stop|restart|build>] [-d <daemon mode> **only up] [-i <service_name>]  [-c <no cache> **only build]" 1>&2; exit 1; }
 
 reload_balancer() {
 	cd /usr/local/opt/load-balancer
@@ -8,33 +8,50 @@ reload_balancer() {
 	docker-compose up -d
 }
 
-while getopts ":s:f:a:d" o; do
+while getopts ":s:f:a:d:c:i:" o; do
     case "${o}" in
         s)
             source=${OPTARG}
             ;;
         f)
-            file=${OPTARG}
+            if [ -z "${OPTARG}" ]; then
+	        file="docker-compose.yml"
+	    else
+		file=${OPTARG}
+	    fi
             ;;
         a)
             action=${OPTARG}
             ;;
 	d)
 	    if [ -z "${OPTARG}" ]; then
-	    	daemon='-d'
+	    	daemon="-d"
 	    fi
+	    ;;
+	c)
+	    if [ -z "${OPTARG}"]; then
+		nocache="--no-cache"
+	    fi
+	    ;;
+	i)
+	    service=${OPTARG}
 	    ;;
     esac
 done
 shift $((OPTIND-1))
 
-if [ -z "${source}" ] || [ -z "${file}" ] || [ -z "${action}" ]; then
+if [ -z "${source}" ] || [ -z "${action}" ]; then
     usage
 fi
 
 cd ${source}
-docker-compose -f ${file} ${action} ${daemon}
+
+command="docker-compose -f ${file} ${action} ${daemon} ${service} ${nocache}"
+echo "Execute the command ${command}"
+$command
 
 if [ ${action} == "up" ] || [ ${action} == "restart" ]; then
 	reload_balancer
-fi 
+fi
+ 
+echo "End process."
